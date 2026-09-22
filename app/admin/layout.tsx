@@ -1,6 +1,7 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import Link from "next/link";
+import { LogoutButton } from "@/components/LogoutButton";
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -19,9 +20,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             <Link href="/admin/audit">Nhật ký</Link>
             <Link href="/">Trang công khai</Link>
           </nav>
-          <form action="/api/auth/logout" method="post" className="ml-auto">
-            <button className="rounded border border-white/40 px-3 py-1 text-sm">Đăng xuất</button>
-          </form>
+          <div className="ml-auto">
+            <LogoutButton />
+          </div>
         </div>
         <nav className="flex gap-4 overflow-x-auto px-4 pb-3 text-sm md:hidden" aria-label="Admin mobile">
           <Link href="/admin">Dashboard</Link><Link href="/admin/businesses">Cơ sở</Link>
