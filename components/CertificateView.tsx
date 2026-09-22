@@ -45,7 +45,7 @@ export const CertificateView = forwardRef<HTMLDivElement, { data: CertificateDat
           className="absolute text-center"
           style={{ top: CERT_LAYOUT.nameBlock.top, left: CERT_LAYOUT.nameBlock.left, width: CERT_LAYOUT.nameBlock.width }}
         >
-          <p className="font-extrabold uppercase leading-tight text-[#0b3d91]" style={{ fontSize: "clamp(14px, 3.2cqw, 34px)" }}>
+          <p className="font-extrabold uppercase leading-tight text-[#0b3d91]" style={{ fontSize: "clamp(19px, calc(3.2cqw + 5px), 39px)" }}>
             {data.businessName}
           </p>
         </div>
@@ -60,13 +60,13 @@ export const CertificateView = forwardRef<HTMLDivElement, { data: CertificateDat
             {data.expiryDate && <span>Hiệu lực đến {fmt(data.expiryDate)}</span>}
           </div>
         )}
-        {/* QR — bottom-left next to "QR CHỨNG NHẬN" */}
+        {/* QR — bottom-left, LEFT of the "QR CHỨNG NHẬN" label (transparent bg) */}
         {data.qrDataUrl && (
           // eslint-disable-next-line @next/next/no-img-element
           <img
             src={data.qrDataUrl}
             alt={`QR xác minh ${data.businessId}`}
-            className="absolute bg-white p-[0.5%]"
+            className="absolute"
             style={{ left: CERT_LAYOUT.qr.left, bottom: CERT_LAYOUT.qr.bottom, width: CERT_LAYOUT.qr.width }}
           />
         )}

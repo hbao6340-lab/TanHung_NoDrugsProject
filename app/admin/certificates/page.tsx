@@ -29,6 +29,17 @@ function Card({ b, onChanged }: { b: Biz; onChanged: () => void }) {
     } finally { setBusy(false); }
   }
 
+  async function refreshQr() {
+    setBusy(true); setMsg("");
+    try {
+      const r = await fetch(`/api/businesses/${b._id}/qr`, { method: "POST" });
+      const d = await r.json();
+      if (!r.ok) { setMsg(d.error || "Cấp QR thất bại"); return; }
+      onChanged();
+      setMsg("Đã tạo lại QR nền trong suốt");
+    } finally { setBusy(false); }
+  }
+
   async function download() {
     const qr = await ensureQr();
     if (!qr && !b.certificate?.qrCodeUrl) return;
@@ -77,6 +88,7 @@ function Card({ b, onChanged }: { b: Biz; onChanged: () => void }) {
           {b.certificate?.qrCodeUrl ? "Tải chứng nhận (PNG)" : "Cấp QR & tải chứng nhận"}
         </button>
         <button onClick={print} className="rounded border px-4 py-1.5 text-sm">In</button>
+        {b.certificate?.qrCodeUrl && <button onClick={refreshQr} disabled={busy} className="rounded border px-4 py-1.5 text-sm disabled:opacity-50">Làm mới QR</button>}
         <a href={`/v/${b.businessId}`} className="rounded border px-4 py-1.5 text-sm underline">Trang xác minh</a>
       </div>
     </div>

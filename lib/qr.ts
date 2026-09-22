@@ -15,5 +15,11 @@ export function qrContentFor(businessId: string): string {
   return `${appBaseUrl()}/v/${businessId}`;
 }
 export async function generateQrDataUrl(businessId: string): Promise<string> {
-  return QRCode.toDataURL(qrContentFor(businessId), { width: 512, margin: 2 });
+  // Transparent light modules so the QR blends into the cream certificate
+  // artwork (dark modules stay fully opaque for reliable scanning).
+  return QRCode.toDataURL(qrContentFor(businessId), {
+    width: 512,
+    margin: 2,
+    color: { dark: "#000000", light: "#00000000" },
+  });
 }
