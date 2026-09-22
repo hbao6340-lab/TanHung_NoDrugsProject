@@ -5,6 +5,7 @@ import Certificate from "@/models/Certificate";
 import { requireUser } from "@/lib/auth";
 import { can } from "@/lib/permissions";
 import { generateQrDataUrl } from "@/lib/qr";
+import { canIssueCertificate } from "@/lib/certificate";
 import { writeAudit } from "@/lib/audit";
 
 export async function POST(_req: Request, { params }: { params: { id: string } }) {
@@ -14,6 +15,9 @@ export async function POST(_req: Request, { params }: { params: { id: string } }
   await dbConnect();
   const b = await Business.findById(params.id) as any;
   if (!b) return NextResponse.json({ error: "Not found" }, { status: 404 });
+  // Certificates (and their QR codes) are issued to VERIFIED businesses only.
+  if (!canIssueCertificate(b.status))
+    return NextResponse.json({ error: "Chỉ cơ sở đã VERIFIED mới được cấp chứng nhận/QR" }, { status: 403 });
   const qrDataUrl = await generateQrDataUrl(b.businessId);
   b.certificate = b.certificate || {};
   b.certificate.qrCodeUrl = qrDataUrl;

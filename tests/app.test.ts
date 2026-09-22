@@ -4,6 +4,7 @@ import { can, checkUserModification } from "../lib/permissions";
 import { sanitizeExcelValue } from "../lib/utils";
 import { businessSchema } from "../lib/validation";
 import { userSchema } from "../lib/validation";
+import { canIssueCertificate, CERT_LAYOUT } from "../lib/certificate";
 import { STATUS_CONFIG } from "../lib/constants";
 import { appBaseUrl, qrContentFor } from "../lib/qr";
 import { getStorage } from "../lib/storage";
@@ -87,6 +88,19 @@ describe("staff account creation validation", () => {
   });
   it("rejects unknown roles", () => {
     expect(userSchema.safeParse({ username: "nhanvien01", password: "secret1", role: "SUPERADMIN" }).success).toBe(false);
+  });
+});
+
+describe("certificate issuance gate", () => {
+  it("only VERIFIED businesses get a certificate", () => {
+    expect(canIssueCertificate("VERIFIED")).toBe(true);
+    for (const s of ["NEEDS_CORRECTION", "NOT_VERIFIED", "EXPIRED", "SUSPENDED", undefined]) {
+      expect(canIssueCertificate(s as never)).toBe(false);
+    }
+  });
+  it("layout anchors exist for name-middle + QR-bottom-left", () => {
+    expect(CERT_LAYOUT.nameBlock).toBeTruthy();
+    expect(CERT_LAYOUT.qr).toBeTruthy();
   });
 });
 

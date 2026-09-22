@@ -16,7 +16,8 @@ export default function BusinessesAdmin() {
   }
   async function qr(id: string) {
     const r = await fetch(`/api/businesses/${id}/qr`, { method: "POST" });
-    const d = await r.json(); alert("QR: " + (d.qrUrl || d.qrDataUrl || "done"));
+    const d = await r.json();
+    alert(r.ok ? "QR: " + (d.qrUrl || d.qrDataUrl || "done") : (d.error || "Cấp QR thất bại"));
   }
   return (
     <div>
