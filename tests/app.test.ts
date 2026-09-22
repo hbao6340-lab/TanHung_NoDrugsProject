@@ -3,6 +3,7 @@ import { validateRows } from "../lib/excel";
 import { can, checkUserModification } from "../lib/permissions";
 import { sanitizeExcelValue } from "../lib/utils";
 import { businessSchema } from "../lib/validation";
+import { userSchema } from "../lib/validation";
 import { STATUS_CONFIG } from "../lib/constants";
 import { appBaseUrl, qrContentFor } from "../lib/qr";
 import { getStorage } from "../lib/storage";
@@ -75,6 +76,17 @@ describe("master account guard", () => {
     expect(checkUserModification(master, { _id: "1", username: "bvp-app" }, { password: "newpass" })).toBeNull();
     expect(checkUserModification(admin, { _id: "2", username: "junior" }, { delete: true })?.status).toBe(403);
     expect(checkUserModification(admin, { _id: "3", username: "staff1" }, { active: false })).toBeNull();
+  });
+});
+
+describe("staff account creation validation", () => {
+  it("requires username ≥3 chars and password ≥6 chars", () => {
+    expect(userSchema.safeParse({ username: "ab", password: "secret1", role: "STAFF" }).success).toBe(false);
+    expect(userSchema.safeParse({ username: "nhanvien01", password: "123", role: "STAFF" }).success).toBe(false);
+    expect(userSchema.safeParse({ username: "nhanvien01", password: "secret1", role: "STAFF" }).success).toBe(true);
+  });
+  it("rejects unknown roles", () => {
+    expect(userSchema.safeParse({ username: "nhanvien01", password: "secret1", role: "SUPERADMIN" }).success).toBe(false);
   });
 });
 

@@ -4,8 +4,10 @@ export default function UsersPage() {
   const [items, setItems] = useState<any[]>([]);
   const [me, setMe] = useState("");
   const [master, setMaster] = useState("");
-  const [form, setForm] = useState({ username: "", password: "", role: "VIEWER" });
+  const [form, setForm] = useState({ username: "", password: "", role: "STAFF", active: true });
   const [msg, setMsg] = useState("");
+  const [formErrors, setFormErrors] = useState<{ username?: string; password?: string }>({});
+  const [showPw, setShowPw] = useState(false);
   async function load() {
     const [u, m] = await Promise.all([
       fetch("/api/admin/users").then((r) => r.json()),
@@ -16,12 +18,29 @@ export default function UsersPage() {
     setMaster((u as any).master || "");
   }
   useEffect(() => { load(); }, []);
+  function genPassword() {
+    const chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789!@#";
+    let s = "";
+    const buf = new Uint32Array(12);
+    crypto.getRandomValues(buf);
+    for (let i = 0; i < buf.length; i++) s += chars[buf[i] % chars.length];
+    setForm((f) => ({ ...f, password: s }));
+    setShowPw(true);
+  }
   async function create(e: React.FormEvent) {
     e.preventDefault(); setMsg("");
-    const r = await fetch("/api/admin/users", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(form) });
-    const d = await r.json();
+    const errs: typeof formErrors = {};
+    if (form.username.trim().length < 3) errs.username = "Tên đăng nhập tối thiểu 3 ký tự";
+    if (form.password.length < 6) errs.password = "Mật khẩu tối thiểu 6 ký tự";
+    setFormErrors(errs);
+    if (Object.keys(errs).length) return;
+    const r = await fetch("/api/admin/users", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...form, username: form.username.trim() }) });
+    const d = await r.json().catch(() => ({}));
     if (!r.ok) { setMsg(d.error || "Tạo thất bại"); return; }
-    setForm({ username: "", password: "", role: "VIEWER" }); load();
+    setMsg(`Đã tạo tài khoản "${d.username}" với quyền ${d.role}`);
+    setForm({ username: "", password: "", role: "STAFF", active: true });
+    setShowPw(false);
+    load();
   }
   async function call(id: string, body: any, okMsg: string) {
     setMsg("");
@@ -46,11 +65,37 @@ export default function UsersPage() {
   return (
     <div><h1 className="text-2xl font-bold">Người dùng</h1>
       <p className="mt-1 text-sm text-slate-600">Tài khoản master ({master || "chưa cấu hình MASTER_ADMIN_USERNAME"}) không thể bị xóa, khóa, hạ quyền hay đổi mật khẩu bởi người khác.</p>
-      <form onSubmit={create} className="mt-4 flex flex-wrap gap-2 rounded border bg-white p-4">
-        <input value={form.username} onChange={(e) => setForm({ ...form, username: e.target.value })} placeholder="Username" className="rounded border px-3 py-2" aria-label="Username" />
-        <input value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} placeholder="Password" type="password" className="rounded border px-3 py-2" aria-label="Password" />
-        <select value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value })} className="rounded border px-3 py-2" aria-label="Role"><option>ADMIN</option><option>STAFF</option><option>VIEWER</option></select>
-        <button className="rounded bg-blue-900 px-4 py-2 text-white">Tạo user</button>
+      <form onSubmit={create} className="mt-4 rounded-lg border bg-white p-5" aria-labelledby="create-user-heading">
+        <h2 id="create-user-heading" className="font-bold">Tạo tài khoản nhân viên mới</h2>
+        <p className="mt-1 text-sm text-slate-600">Tài khoản mới có thể đăng nhập ngay. Quyền <b>STAFF</b>: quản lý cơ sở, nhập/xuất Excel, tạo QR. Quyền <b>ADMIN</b> thêm quản lý người dùng. <b>VIEWER</b> chỉ xem.</p>
+        <div className="mt-4 grid gap-4 md:grid-cols-2">
+          <div>
+            <label htmlFor="new-username" className="text-sm font-semibold">Tên đăng nhập *</label>
+            <input id="new-username" value={form.username} onChange={(e) => setForm({ ...form, username: e.target.value })} placeholder="vd: nhanvien01" className="mt-1 w-full rounded border px-3 py-2" autoComplete="off" aria-invalid={!!formErrors.username} aria-describedby={formErrors.username ? "new-username-err" : undefined} />
+            {formErrors.username && <p id="new-username-err" role="alert" className="mt-1 text-xs text-red-700">{formErrors.username}</p>}
+          </div>
+          <div>
+            <label htmlFor="new-password" className="text-sm font-semibold">Mật khẩu * <span className="font-normal text-slate-500">(tối thiểu 6 ký tự)</span></label>
+            <div className="mt-1 flex gap-2">
+              <input id="new-password" type={showPw ? "text" : "password"} value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} placeholder="Nhập hoặc tạo tự động" className="w-full rounded border px-3 py-2" autoComplete="new-password" aria-invalid={!!formErrors.password} aria-describedby={formErrors.password ? "new-password-err" : undefined} />
+              <button type="button" onClick={() => setShowPw(!showPw)} className="shrink-0 rounded border px-3 text-sm" aria-label={showPw ? "Ẩn mật khẩu" : "Hiện mật khẩu"}>{showPw ? "Ẩn" : "Hiện"}</button>
+              <button type="button" onClick={genPassword} className="shrink-0 rounded border px-3 text-sm" title="Tạo mật khẩu ngẫu nhiên">Tạo</button>
+            </div>
+            {formErrors.password && <p id="new-password-err" role="alert" className="mt-1 text-xs text-red-700">{formErrors.password}</p>}
+          </div>
+          <div>
+            <label htmlFor="new-role" className="text-sm font-semibold">Vai trò</label>
+            <select id="new-role" value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value })} className="mt-1 w-full rounded border px-3 py-2">
+              <option value="STAFF">STAFF — quản lý cơ sở, Excel, QR</option>
+              <option value="ADMIN">ADMIN — toàn quyền + quản lý người dùng</option>
+              <option value="VIEWER">VIEWER — chỉ xem</option>
+            </select>
+          </div>
+          <div className="flex items-end pb-2">
+            <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={form.active} onChange={(e) => setForm({ ...form, active: e.target.checked })} className="h-4 w-4" /> Kích hoạt ngay</label>
+          </div>
+        </div>
+        <button className="mt-4 rounded bg-blue-900 px-6 py-2 font-semibold text-white">Tạo tài khoản</button>
       </form>
       {msg && <p role="status" className="mt-2 text-sm text-slate-700">{msg}</p>}
       <div className="mt-4 overflow-x-auto rounded border bg-white"><table className="w-full text-sm">
