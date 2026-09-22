@@ -3,6 +3,7 @@ import { dbConnect } from "@/lib/db";
 import User from "@/models/User";
 import { requireUser } from "@/lib/auth";
 import { hashPassword } from "@/lib/auth";
+import { masterUsername } from "@/lib/permissions";
 import { writeAudit } from "@/lib/audit";
 
 export async function GET() {
@@ -10,7 +11,7 @@ export async function GET() {
   if (!session) return NextResponse.json({ error }, { status });
   await dbConnect();
   const items = await User.find().select("-passwordHash").sort({ createdAt: -1 }).lean();
-  return NextResponse.json({ items });
+  return NextResponse.json({ items, master: masterUsername() });
 }
 export async function POST(req: Request) {
   const { session, error, status } = await requireUser(["ADMIN"]);

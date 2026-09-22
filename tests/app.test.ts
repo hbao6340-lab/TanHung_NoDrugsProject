@@ -1,6 +1,6 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, beforeEach } from "vitest";
 import { validateRows } from "../lib/excel";
-import { can } from "../lib/permissions";
+import { can, checkUserModification } from "../lib/permissions";
 import { sanitizeExcelValue } from "../lib/utils";
 import { businessSchema } from "../lib/validation";
 import { STATUS_CONFIG } from "../lib/constants";
@@ -58,6 +58,23 @@ describe("security + validation", () => {
       expect(STATUS_CONFIG[s].label).toBeTruthy();
       expect(STATUS_CONFIG[s].icon).toBeTruthy();
     }
+  });
+});
+
+describe("master account guard", () => {
+  const admin = { sub: "2", username: "junior", role: "ADMIN" };
+  const master = { sub: "1", username: "bvp-app", role: "ADMIN" };
+  beforeEach(() => { process.env.MASTER_ADMIN_USERNAME = "bvp-app"; });
+  it("blocks deleting/deactivating/demoting master by others", () => {
+    expect(checkUserModification(admin, { _id: "1", username: "bvp-app" }, { delete: true })?.status).toBe(403);
+    expect(checkUserModification(admin, { _id: "1", username: "bvp-app" }, { active: false })?.status).toBe(403);
+    expect(checkUserModification(admin, { _id: "1", username: "bvp-app" }, { role: "VIEWER" })?.status).toBe(403);
+    expect(checkUserModification(admin, { _id: "1", username: "bvp-app" }, { password: "x" })?.status).toBe(403);
+  });
+  it("lets master change its own password, blocks self-delete for others", () => {
+    expect(checkUserModification(master, { _id: "1", username: "bvp-app" }, { password: "newpass" })).toBeNull();
+    expect(checkUserModification(admin, { _id: "2", username: "junior" }, { delete: true })?.status).toBe(403);
+    expect(checkUserModification(admin, { _id: "3", username: "staff1" }, { active: false })).toBeNull();
   });
 });
 
