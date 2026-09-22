@@ -19,5 +19,5 @@ export const CERT_LAYOUT = {
   metaLine: { top: "52%", left: "15%", width: "70%" },
   /** QR code: bottom-left, LEFT of the "QR CHỨNG NHẬN" label — sized to match
       the reference QR printed on the right side of the template. */
-  qr: { left: "3%", bottom: "8%", width: "7%" },
+  qr: { left: "5%", bottom: "8%", width: "7%" },
 } as const;
